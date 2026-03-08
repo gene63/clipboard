@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Clipboard Share</title>
+
+<style>
+
+body{
+  background:#1e1e1e;
+  color:#e6e6e6;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align:center;
+  margin-top:40px;
+}
+
+h2{
+  color:#ffffff;
+}
+
+p{
+  color:#bbbbbb;
+}
+
+button{
+  font-size:20px;
+  padding:12px 26px;
+  border-radius:8px;
+  border:none;
+  background:#3a7afe;
+  color:white;
+  cursor:pointer;
+  margin-top:20px;
+}
+
+button:hover{
+  background:#5a90ff;
+}
+
+img{
+  max-width:90%;
+  margin-top:30px;
+  border-radius:10px;
+  box-shadow:0 0 20px rgba(0,0,0,0.6);
+}
+
+.container{
+  max-width:900px;
+  margin:auto;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Clipboard Image Share</h2>
+
+<p>Windows: Ctrl + V 로 이미지 업로드</p>
+
+<button onclick="copyImage()">Copy Image (iPad)</button>
+
+<div>
+<img id="preview">
+</div>
+
+</div>
+
+<script>
+
+async function refresh(){
+
+  const res = await fetch("/exists")
+  const data = await res.json()
+
+  if(data.exists){
+    document.getElementById("preview").src="/image?"+Date.now()
+  }
+}
+
+setInterval(refresh,2000)
+
+document.addEventListener("paste", async (event)=>{
+
+  const items = event.clipboardData.items
+
+  for(const item of items){
+
+    if(item.type.indexOf("image") !== -1){
+
+      const blob = item.getAsFile()
+
+      const form = new FormData()
+      form.append("image", blob, "clip.png")
+
+      await fetch("/upload",{
+        method:"POST",
+        body:form
+      })
+
+      refresh()
+    }
+  }
+
+})
+
+async function copyImage(){
+
+  const res = await fetch("/image")
+  const blob = await res.blob()
+
+  try{
+
+    const item = new ClipboardItem({
+      [blob.type]: blob
+    })
+
+    await navigator.clipboard.write([item])
+
+    alert("Image copied")
+
+  }catch(e){
+    alert("Clipboard blocked. Long press image to copy.")
+  }
+
+}
+
+</script>
+
+</body>
+</html>
